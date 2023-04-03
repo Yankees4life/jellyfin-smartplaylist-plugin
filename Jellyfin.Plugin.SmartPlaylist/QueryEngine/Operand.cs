@@ -2,65 +2,63 @@
 
 public class Operand {
 
-	public List<string> Actors { get; set; }
+	public List<string> Actors { get; set; } = new();
 
-	public List<string> Composers { get; set; }
+	public List<string> Composers { get; set; } = new();
 
-	public float CommunityRating { get; set; }
+	public List<string> Directors { get; set; } = new();
 
-	public float CriticRating { get; set; }
+	public List<string> Genres { get; set; } = new();
 
-	public List<string> Directors { get; set; }
+	public List<string> GuestStars { get; set; } = new();
 
-	public List<string> Genres { get; set; }
+	public List<string> Producers { get; set; } = new();
 
-	public List<string> GuestStars { get; set; }
+	public List<string> Studios { get; set; } = new();
 
-	public bool IsPlayed { get; set; }
+	public List<string> Writers { get; set; } = new();
+
+	public float CommunityRating { get; set; } = 0;
+
+	public float CriticRating { get; set; } = 0;
+
+	public bool IsPlayed { get; set; } = false;
 
 	public string Name { get; set; }
 
-	public string FolderPath { get; set; }
+	public string FolderPath { get; set; } = "";
 
-	public double PremiereDate { get; set; }
+	public double PremiereDate { get; set; } = 0;
 
-	public List<string> Producers { get; set; }
+	public string MediaType { get; set; } = "";
 
-	public List<string> Studios { get; set; }
+	public string Album { get; set; } = "";
 
-	public List<string> Writers { get; set; }
+	public double DateCreated { get; set; } = 0;
 
-	public string MediaType { get; set; }
+	public double DateLastRefreshed { get; set; } = 0;
 
-	public string Album { get; set; }
+	public double DateLastSaved { get; set; } = 0;
 
-	public double DateCreated { get; set; }
+	public double DateModified { get; set; } = 0;
 
-	public double DateLastRefreshed { get; set; }
+	public int? ProductionYear { get; set; } = null;
 
-	public double DateLastSaved { get; set; }
+	public string OriginalTitle { get; set; } = "";
 
-	public double DateModified { get; set; }
+	public int Height { get; set; } = 0;
+
+	public int Width { get; set; } = 0;
+
+	public string FileNameWithoutExtension { get; set; } = "";
+
+	public string OfficialRating { get; set; } = "";
+
+	public bool HasSubtitles { get; set; } = false;
+
+	public string SortName { get; set; } = "";
 
 	public Operand(string name) {
-		Actors = new();
-		Composers = new();
-		CommunityRating = 0;
-		CriticRating = 0;
-		Directors = new();
-		Genres = new();
-		GuestStars = new();
 		Name = name;
-		FolderPath = "";
-		PremiereDate = 0;
-		Producers = new();
-		Studios = new();
-		Writers = new();
-		MediaType = "";
-		Album = "";
-		DateCreated = 0;
-		DateLastRefreshed = 0;
-		DateLastSaved = 0;
-		DateModified = 0;
 	}
 }

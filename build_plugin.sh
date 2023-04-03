@@ -33,10 +33,11 @@
 #
 
 MY=$(dirname $(realpath -s "${0}"))
+OUR="S:\Repo\Homelab\JellyFin\JMiles42-Jellyfin-Plugins"
 JPRM="jprm"
 
-DEFAULT_REPO_DIR="${MY}/StreamDatastore.Jellyfin"
-DEFAULT_REPO_URL="http://192.168.0.116:3000/HomeLab/jellyfin-plugins"
+DEFAULT_REPO_DIR="${OUR}"
+DEFAULT_REPO_URL="https://github.com/JMiles42/Jellyfin-Plugins/raw/master"
 
 PLUGIN=${1:-${PLUGIN:-.}}
 
