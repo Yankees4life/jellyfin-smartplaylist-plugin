@@ -3,25 +3,22 @@ using MediaBrowser.Controller;
 
 namespace Jellyfin.Plugin.SmartPlaylist.Infrastructure;
 
-public class SmartPlaylistFileSystem : ISmartPlaylistFileSystem
-{
-    public SmartPlaylistFileSystem(IServerApplicationPaths serverApplicationPaths)
-    {
-        BasePath = Path.Combine(serverApplicationPaths.DataPath, "smartplaylists");
+public class SmartPlaylistFileSystem : ISmartPlaylistFileSystem {
+	public string SmartPlaylistsPath { get; }
+	public SmartPlaylistFileSystem(IServerApplicationPaths serverApplicationPaths) {
+		SmartPlaylistsPath = Path.Combine(serverApplicationPaths.DataPath, "smartplaylists");
 
-        Directory.CreateDirectory(BasePath);
-    }
+		Directory.CreateDirectory(SmartPlaylistsPath);
+	}
 
-    public string BasePath { get; }
+	public string GetSmartPlaylistFilePath(string smartPlaylistId) =>
+			Directory.GetFiles(SmartPlaylistsPath, $"{smartPlaylistId}.json", SearchOption.AllDirectories).First();
 
-    public string GetSmartPlaylistFilePath(string smartPlaylistId) =>
-            Directory.GetFiles(BasePath, $"{smartPlaylistId}.json", SearchOption.AllDirectories).First();
+	public string[] GetSmartPlaylistFilePaths(string userId) => Directory.GetFiles(SmartPlaylistsPath);
 
-    public string[] GetSmartPlaylistFilePaths(string userId) => Directory.GetFiles(BasePath);
+	public string[] GetAllSmartPlaylistFilePaths() =>
+			Directory.GetFiles(SmartPlaylistsPath, "*.json", SearchOption.AllDirectories);
 
-    public string[] GetAllSmartPlaylistFilePaths() =>
-            Directory.GetFiles(BasePath, "*.json", SearchOption.AllDirectories);
-
-    public string GetSmartPlaylistPath(string userId, string playlistId) =>
-            Path.Combine(BasePath, $"{playlistId}.json");
+	public string GetSmartPlaylistPath(string userId, string playlistId) =>
+			Path.Combine(SmartPlaylistsPath, $"{playlistId}.json");
 }

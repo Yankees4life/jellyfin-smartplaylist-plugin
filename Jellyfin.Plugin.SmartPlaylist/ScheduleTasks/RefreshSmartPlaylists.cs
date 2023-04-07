@@ -14,7 +14,7 @@ using MediaBrowser.Model.Tasks;
 
 namespace Jellyfin.Plugin.SmartPlaylist.ScheduleTasks;
 
-public class RefreshAllPlaylists : IScheduledTask, IConfigurableScheduledTask {
+public class RefreshSmartPlaylists : IScheduledTask, IConfigurableScheduledTask {
 	private readonly IFileSystem _fileSystem;
 	private readonly ILibraryManager _libraryManager;
 	private readonly ILogger _logger;
@@ -23,9 +23,9 @@ public class RefreshAllPlaylists : IScheduledTask, IConfigurableScheduledTask {
 	private readonly IProviderManager _providerManager;
 	private readonly IUserManager _userManager;
 
-	public RefreshAllPlaylists(IFileSystem fileSystem,
+	public RefreshSmartPlaylists(IFileSystem fileSystem,
 							   ILibraryManager libraryManager,
-							   ILogger<RefreshAllPlaylists> logger,
+							   ILogger<RefreshSmartPlaylists> logger,
 							   IPlaylistManager playlistManager,
 							   IProviderManager providerManager,
 							   IServerApplicationPaths serverApplicationPaths,
@@ -39,14 +39,13 @@ public class RefreshAllPlaylists : IScheduledTask, IConfigurableScheduledTask {
 
 		ISmartPlaylistFileSystem plFileSystem = new SmartPlaylistFileSystem(serverApplicationPaths);
 		_plStore = new SmartPlaylistStore(plFileSystem, logger);
-
-		_logger.LogInformation("Constructed Refresher ");
 	}
 
-	private string CreateNewPlaylist(SmartPlaylistDto dto, User user) {
+	private string CreateNewPlaylist(SmartPlaylistDto dto, User user, IReadOnlyList<Guid> items) {
 		var req = new PlaylistCreationRequest {
 			Name = dto.Name,
-			UserId = user.Id
+			UserId = user.Id,
+			ItemIdList = items
 		};
 
 		var foo = _playlistManager.CreatePlaylist(req);
@@ -93,7 +92,7 @@ public class RefreshAllPlaylists : IScheduledTask, IConfigurableScheduledTask {
 
 	public bool IsLogged => true;
 
-	public string Key => nameof(RefreshAllPlaylists);
+	public string Key => nameof(RefreshSmartPlaylists);
 
 	public string Name => "Refresh all SmartPlaylist";
 
@@ -140,21 +139,22 @@ public class RefreshAllPlaylists : IScheduledTask, IConfigurableScheduledTask {
 
 				progress.Report(20);
 
-				if ((dto.Id == null) || !p.Any()) {
-					_logger.LogInformation("Playlist ID not set, creating new playlist");
-					var plId = CreateNewPlaylist(dto, user);
-					dto.Id = plId;
-					await _plStore.SaveAsync(dto);
-					var playlists = _playlistManager.GetPlaylists(user.Id);
-					p.Clear();
-					p.AddRange(playlists.Where(x => x.Id.ToString("N") == dto.Id));
-				}
-
-				progress.Report(30);
 
 				var newItems = smartPlaylist.FilterPlaylistItems(GetAllUserMedia(user, smartPlaylist.SupportedItems),
 																 _libraryManager,
-																 user);
+																 user).ToArray();
+				progress.Report(30);
+
+				if ((dto.Id == null) || !p.Any()) {
+					_logger.LogInformation("Playlist ID not set, creating new playlist");
+					var plId = CreateNewPlaylist(dto, user, newItems);
+					dto.Id = plId;
+					await _plStore.SaveAsync(dto);
+					//var playlists = _playlistManager.GetPlaylists(user.Id);
+					//p.Clear();
+					//p.AddRange(playlists.Where(x => x.Id.ToString("N") == dto.Id));
+					continue;
+				}
 
 				progress.Report(40);
 				var playlist = p.First();

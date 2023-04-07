@@ -38,6 +38,10 @@ internal class OperandFactory {
 		operand.FileNameWithoutExtension = baseItem.FileNameWithoutExtension;
 		operand.OfficialRating = baseItem.OfficialRating;
 		operand.SortName = baseItem.SortName;
+		operand.DaysSinceCreated = GetDaysAgo(baseItem.DateCreated, DateTime.Now);
+		operand.DaysSinceLastRefreshed = GetDaysAgo(baseItem.DateLastRefreshed, DateTime.Now);
+		operand.DaysSinceLastSaved = GetDaysAgo(baseItem.DateLastSaved, DateTime.Now);
+		operand.DaysSinceLastModified = GetDaysAgo(baseItem.DateModified, DateTime.Now);
 
 		operand.HasSubtitles = baseItem switch {
 			Movie m => m.HasSubtitles,
@@ -48,6 +52,7 @@ internal class OperandFactory {
 
 		try {
 			if (baseItem.PremiereDate.HasValue) {
+				operand.DaysSincePremiereDate = GetDaysAgo(baseItem.PremiereDate.Value, DateTime.Now);
 				operand.PremiereDate = new DateTimeOffset(baseItem.PremiereDate.Value).ToUnixTimeSeconds();
 			}
 
@@ -62,4 +67,6 @@ internal class OperandFactory {
 
 		return operand;
 	}
+
+	private static int GetDaysAgo(DateTime currentDate, DateTime now) => (int)(now - currentDate).TotalDays;
 }

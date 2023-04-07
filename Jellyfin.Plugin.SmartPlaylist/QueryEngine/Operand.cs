@@ -58,6 +58,23 @@ public class Operand {
 
 	public string SortName { get; set; } = "";
 
+	public int DaysSinceCreated { get; set; } = 0;
+
+	public int DaysSinceLastSaved { get; set; } = 0;
+
+	public int DaysSinceLastModified { get; set; } = 0;
+
+	public int DaysSinceLastRefreshed { get; set; } = 0;
+
+	public int DaysSincePremiereDate { get; set; } = 0;
+
+	public bool IsSquare => Height == Width;
+
+	public bool IsHorizontal => Height < Width;
+
+	public bool IsVertical => !IsHorizontal;
+
+
 	public Operand(string name) {
 		Name = name;
 	}

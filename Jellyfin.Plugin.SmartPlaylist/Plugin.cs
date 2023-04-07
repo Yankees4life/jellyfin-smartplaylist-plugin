@@ -9,11 +9,11 @@ public class Plugin : BasePlugin<BasePluginConfiguration>, IHasWebPages {
 
 	public static Plugin Instance { get; private set; }
 
-	public override Guid Id => Guid.Parse("5A63FE63-765F-43F7-A129-661E839F83D5");
+	public override Guid Id => Guid.Parse(SmartPlaylistConsts.PLUGIN_GUID);
 
-	public override string Name => "Smart Playlist 2 Playlist Harder";
+	public override string Name => SmartPlaylistConsts.PLUGIN_NAME;
 
-	public override string Description => "Allow to define rules to generate/update playlists.";
+	public override string Description => SmartPlaylistConsts.PLUGIN_DESCRIPTION;
 
 	public Plugin(IApplicationPaths applicationPaths,
 				  IXmlSerializer xmlSerializer) : base(applicationPaths, xmlSerializer) =>

@@ -1,7 +1,7 @@
 namespace Jellyfin.Plugin.SmartPlaylist.Interfaces;
 
 public interface ISmartPlaylistFileSystem {
-	string BasePath { get; }
+	string SmartPlaylistsPath { get; }
 
 	string GetSmartPlaylistFilePath(string smartPlaylistId);
 
