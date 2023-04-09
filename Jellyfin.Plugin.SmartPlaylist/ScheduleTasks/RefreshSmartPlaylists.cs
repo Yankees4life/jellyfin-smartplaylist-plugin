@@ -45,7 +45,7 @@ public class RefreshSmartPlaylists : IScheduledTask, IConfigurableScheduledTask 
 		var req = new PlaylistCreationRequest {
 			Name = dto.Name,
 			UserId = user.Id,
-			ItemIdList = items
+			ItemIdList = items,
 		};
 
 		var foo = _playlistManager.CreatePlaylist(req);
@@ -60,30 +60,6 @@ public class RefreshSmartPlaylists : IScheduledTask, IConfigurableScheduledTask 
 		};
 
 		return _libraryManager.GetItemsResult(query).Items;
-	}
-
-	// Real PlaylistManagers RemoveFromPlaylist needs an entry ID which seems to not work. Explore further and file a bug.
-	public void RemoveFromPlaylist(string playlistId, IEnumerable<string> entryIds) {
-		if (_libraryManager.GetItemById(playlistId) is not Playlist playlist) {
-			throw new ArgumentException("No Playlist exists with the supplied Id");
-		}
-
-		var children = playlist.GetManageableItems().ToList();
-
-		var idList = entryIds.ToList();
-		var removals = children.Where(i => idList.Contains(i.Item1.ItemId.ToString())).ToArray();
-
-		playlist.LinkedChildren = children.Except(removals)
-										  .Select(i => i.Item1)
-										  .ToArray();
-
-		playlist.UpdateToRepositoryAsync(ItemUpdateType.MetadataEdit, CancellationToken.None);
-
-		_providerManager.QueueRefresh(playlist.Id,
-									  new(new DirectoryService(_fileSystem)) {
-										  ForceSave = true
-									  },
-									  RefreshPriority.High);
 	}
 
 	public bool IsHidden => false;
@@ -114,68 +90,91 @@ public class RefreshSmartPlaylists : IScheduledTask, IConfigurableScheduledTask 
 		try {
 			var dtos = await _plStore.GetAllSmartPlaylistAsync();
 
-			foreach (var dto in dtos) {
-				if (dto.IsReadonly) {
-					continue;
-				}
-				var smartPlaylist = new Models.SmartPlaylist(dto);
-
-				var user = _userManager.GetUserByName(smartPlaylist.User);
-				progress.Report(5);
-				List<Playlist> p = new();
-
-				try {
-					var playlists = _playlistManager.GetPlaylists(user.Id);
-					p.AddRange(playlists.Where(x => x.Id.ToString("N") == dto.Id));
-				}
-				catch (NullReferenceException ex) {
-					_logger.LogError(ex,
-									 "No user named {User} found, please fix playlist {PlaylistName}",
-									 dto.User,
-									 dto.Name);
-
-					continue;
-				}
-
-				progress.Report(20);
-
-
-				var newItems = smartPlaylist.FilterPlaylistItems(GetAllUserMedia(user, smartPlaylist.SupportedItems),
-																 _libraryManager,
-																 user).ToArray();
-				progress.Report(30);
-
-				if ((dto.Id == null) || !p.Any()) {
-					_logger.LogInformation("Playlist ID not set, creating new playlist");
-					var plId = CreateNewPlaylist(dto, user, newItems);
-					dto.Id = plId;
-					await _plStore.SaveAsync(dto);
-					//var playlists = _playlistManager.GetPlaylists(user.Id);
-					//p.Clear();
-					//p.AddRange(playlists.Where(x => x.Id.ToString("N") == dto.Id));
-					continue;
-				}
-
-				progress.Report(40);
-				var playlist = p.First();
-
-				var query = new InternalItemsQuery(user) {
-					IncludeItemTypes = smartPlaylist.SupportedItems.ToArray(),
-					Recursive = true,
-				};
-
-				var plItems = playlist.GetChildren(user, false, query).ToList();
-				progress.Report(60);
-
-				var toRemove = plItems.Select(x => x.Id.ToString()).ToList();
-				progress.Report(80);
-				RemoveFromPlaylist(playlist.Id.ToString(), toRemove);
-				progress.Report(95);
-				await _playlistManager.AddToPlaylistAsync(playlist.Id, newItems.ToArray(), user.Id);
+			for (var index = 0; index < dtos.Length; index++) {
+				await ProcessPlaylist(progress, dtos[index], index, dtos.Length);
 			}
 		}
 		catch (Exception ex) {
 			_logger.LogError(ex, "Error processing playlists");
 		}
+	}
+
+	private async Task ProcessPlaylist(IProgress<double> progress, SmartPlaylistDto dto, int index, int length) {
+		ReportPercentage(0);
+
+		if (dto.IsReadonly) {
+			ReportPercentage(100);
+
+			return;
+		}
+
+		var smartPlaylist = new Models.SmartPlaylist(dto);
+
+		var user = _userManager.GetUserByName(smartPlaylist.User);
+		ReportPercentage(10);
+		List<Playlist> p = new();
+
+		try {
+			var playlists = _playlistManager.GetPlaylists(user.Id);
+			p.AddRange(playlists.Where(x => x.Id.ToString("N") == dto.Id));
+			ReportPercentage(20);
+		}
+		catch (NullReferenceException ex) {
+			_logger.LogError(ex,
+							 "No user named {User} found, please fix playlist {PlaylistName}",
+							 dto.User,
+							 dto.Name);
+
+			return;
+		}
+
+		if ((dto.Id == null) || !p.Any()) {
+			_logger.LogInformation("Playlist ID not set, creating new playlist");
+			ReportPercentage(40);
+			var plId = CreateNewPlaylist(dto, user, GetPlaylistItems(smartPlaylist, user));
+			dto.Id = plId;
+			ReportPercentage(50);
+			await _plStore.SaveAsync(dto);
+			ReportPercentage(100);
+			return;
+		}
+
+		ReportPercentage(40);
+
+		var playlist = p.First();
+		await _playlistManager.RemoveFromPlaylistAsync(playlist.Id.ToString(), playlist.LinkedChildren.Select(b => b.Id));
+		ReportPercentage(50);
+
+		playlist.Tagline = $"{dto.Name} Generated by {SmartPlaylistConsts.PLUGIN_NAME}";
+
+		var newItems = GetPlaylistItems(smartPlaylist, user);
+		ReportPercentage(75);
+
+		await _playlistManager.AddToPlaylistAsync(playlist.Id, newItems, user.Id);
+
+		ReportPercentage(95);
+		QueueRefresh(playlist.Id);
+		ReportPercentage(100);
+
+		void ReportPercentage(double percent) {
+			//Used to report, arbitrary percent values, to indicate that the job is progressing, although not an accurate estimation.
+			progress.ReportPercentage(length, index, percent);
+		}
+	}
+
+
+	private Guid[] GetPlaylistItems(Models.SmartPlaylist smartPlaylist, User user) =>
+			smartPlaylist.FilterPlaylistItems(GetAllUserMedia(user, smartPlaylist.SupportedItems),
+											  _libraryManager,
+											  user).ToArray();
+
+
+	public void QueueRefresh(Guid playlistId) {
+		_providerManager.QueueRefresh(playlistId,
+									  new(new DirectoryService(_fileSystem)) {
+										  ForceSave = true,
+										  ReplaceAllImages = true,
+									  },
+									  RefreshPriority.High);
 	}
 }
