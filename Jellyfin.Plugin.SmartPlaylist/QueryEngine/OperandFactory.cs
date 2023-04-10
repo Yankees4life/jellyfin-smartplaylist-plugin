@@ -111,6 +111,10 @@ internal class OperandFactory {
 				break;
 			case Episode episode:
 				operand.HasSubtitles = episode.HasSubtitles;
+				operand.AiredSeasonNumber = episode.AiredSeasonNumber;
+				operand.ParentIndexNumber = episode.ParentIndexNumber;
+				operand.SeasonName = episode.SeasonName;
+				operand.SeriesName = episode.SeriesName;
 
 				break;
 			case MusicVideo musicVideo:
@@ -131,7 +135,6 @@ internal class OperandFactory {
 
 		return 0;
 	}
-
 
 	public static int GetDaysAgo(DateTime currentDate) => GetDaysAgo(currentDate, DateTime.Now);
 	public static int GetDaysAgo(DateTime currentDate, DateTime now) => (int)(now - currentDate).TotalDays;

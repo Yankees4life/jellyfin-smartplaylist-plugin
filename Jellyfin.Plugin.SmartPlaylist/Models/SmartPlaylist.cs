@@ -21,7 +21,7 @@ public class SmartPlaylist {
     public int MaxItems { get; set; }
     public bool IsReadonly { get; set; }
 
-    public Order[] Order { get; set; }
+    public OrderStack Order { get; set; }
 
     public BaseItemKind[] SupportedItems { get; set; }
 
@@ -39,11 +39,11 @@ public class SmartPlaylist {
             MaxItems = 1000;
         }
 
-        Order = GenerateOrder(dto.Order);
+        Order = GenerateOrderStack(dto.Order);
         SupportedItems = dto.SupportedItems;
     }
 
-    private static Order[] GenerateOrder(OrderByDto dtoOrder) {
+    private static OrderStack GenerateOrderStack(OrderByDto dtoOrder) {
         var result = new List<Order>(1 + (dtoOrder.ThenBy?.Count ?? 0)) {
                 OrderManager.GetOrder(dtoOrder)
         };
@@ -54,7 +54,7 @@ public class SmartPlaylist {
             }
         }
 
-        return result.ToArray();
+        return new(result.ToArray());
     }
 
     internal List<List<Func<Operand, bool>>> CompileRuleSets() {
@@ -76,7 +76,6 @@ public class SmartPlaylist {
 
         var compiledRules = CompileRuleSets();
         foreach (var i in items) {
-            //var people = libraryManager.GetPeople(i);
             var operand = OperandFactory.GetMediaType(libraryManager, i, user);
 
             if (compiledRules.Any(set => set.All(rule => rule(operand)))) {
@@ -84,25 +83,8 @@ public class SmartPlaylist {
             }
         }
 
-        var enumerable = results.AsEnumerable();
-
-        if (Order.Any()) {
-            var order = Order.First();
-            var orderedEnumerable = order.OrderBy(enumerable);
-
-            if (Order.Length > 1) {
-                foreach (var orderLoop in Order.Skip(1)) {
-                    orderedEnumerable = orderLoop.ThenBy(orderedEnumerable);
-                }
-            }
-
-            enumerable = orderedEnumerable;
-        }
+        var enumerable = Order.OrderItems(results);
 
         return enumerable.Select(bi => bi.Id);
-    }
-
-    private static void Validate() {
-        //Todo create validation for constructor
     }
 }

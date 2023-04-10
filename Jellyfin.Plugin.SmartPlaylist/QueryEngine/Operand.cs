@@ -25,6 +25,7 @@ public class Operand {
 	public float CriticRating { get; set; } = 0;
 
 	public bool IsPlayed { get; set; } = false;
+
 	public bool IsFavoriteOrLiked { get; set; } = false;
 
 	public string Name { get; set; }
@@ -88,6 +89,14 @@ public class Operand {
 	public double PlayedPercentage { get; set; } = 0;
 
 	public long PlaybackPositionTicks { get; set; } = 0;
+
+	public int? AiredSeasonNumber { get; set; }
+
+	public int? ParentIndexNumber { get; set; }
+
+	public string SeasonName { get; set; } = "";
+
+	public string SeriesName { get; set; } = "";
 
 	public Operand(string name) {
 		Name = name;

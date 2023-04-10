@@ -1,19 +1,15 @@
 using Jellyfin.Plugin.SmartPlaylist.Models.Dto;
-using MediaBrowser.Controller.Entities;
 
 namespace Jellyfin.Plugin.SmartPlaylist.QueryEngine.Ordering;
 
-public static class OrderManager
-{
+public static class OrderManager {
     private static readonly Dictionary<string, OrderPair> _orderPairs = new();
 
-    static OrderManager()
-    {
+    static OrderManager() {
         RegisterOrders();
     }
 
-    private static void RegisterOrders()
-    {
+    private static void RegisterOrders() {
         RegisterOrder(NoOrder.Instance, NoOrder.Instance);
         RegisterOrder(item => item.Name, "Name");
         RegisterOrder(item => item.OriginalTitle, "OriginalTitle");
@@ -34,37 +30,39 @@ public static class OrderManager
         RegisterOrder(item => item.EndDate, "EndDate");
         RegisterOrder(item => item.Overview, "Overview");
         RegisterOrder(item => item.ProductionYear, "ProductionYear", "Year");
+
+        RegisterOrder(item => item.CollectionName, "CollectionName", "BoxSet");
+        RegisterOrder(item => item.HasSubtitles, "HasSubtitles");
+
+        RegisterOrder(item => item.AiredSeasonNumber, "SeasonNumber", "AiredSeasonNumber");
+        RegisterOrder(item => item.ParentIndexNumber, "IndexNumber", "ParentIndexNumber", "ParentIndex");
+        RegisterOrder(item => item.SeasonName, "SeasonName", "Season");
+        RegisterOrder(item => item.SeriesName, "SeriesName", "Series");
     }
 
-    private static void RegisterOrder<TKey>(Func<BaseItem, TKey> keySelector, params string[] ids)
-    {
+    private static void RegisterOrder<TKey>(Func<SortableBaseItem, TKey> keySelector, params string[] ids) {
         var ascending = new PropertyOrder<TKey>(keySelector, true, ids);
         var descending = new PropertyOrder<TKey>(keySelector, false, ids);
 
-        foreach (var name in ids)
-        {
+        foreach (var name in ids) {
             _orderPairs[name] = new(ascending, descending);
         }
     }
 
-    private static void RegisterOrder<T>(T ascending, T descending) where T : Order
-    {
-        foreach (var name in ascending.Names())
-        {
+    private static void RegisterOrder<T>(T ascending, T descending) where T : Order {
+        foreach (var name in ascending.Names()) {
             _orderPairs[name] = new(ascending, descending);
         }
     }
 
     public static Order GetOrder(OrderDto dto) => _orderPairs[dto.Name].Get(dto.Ascending);
 
-    private class OrderPair
-    {
+    private class OrderPair {
         private Order Ascending { get; }
 
         private Order Descending { get; }
 
-        public OrderPair(Order ascending, Order descending)
-        {
+        public OrderPair(Order ascending, Order descending) {
             Ascending = ascending;
             Descending = descending;
         }
