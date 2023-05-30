@@ -13,6 +13,8 @@ public class Operand {
 	public List<string> GuestStars { get; set; } = new();
 
 	public List<string> Producers { get; set; } = new();
+	
+	public List<string> Tags { get; set; } = new();
 
 	public List<string> Studios { get; set; } = new();
 
